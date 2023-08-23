@@ -44,4 +44,6 @@ admin=your_user_name
 nohup /usr/local/anaconda3/bin/python /usr/local/bin/ecnu_auth --admin $admin --daemon > /usr/local/bin/ecnu_auth.log 2>&1 &
 ```
 
+## 备注
 
+`auth_client` 由信息办提供
