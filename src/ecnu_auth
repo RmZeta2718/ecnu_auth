@@ -15,6 +15,8 @@ PASS_K = "password"
 
 SETTING_PATH = "/usr/local/bin/auth_setting"
 
+MSG_TIMEOUT = "context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
+
 
 def parse_args():
     parser = ArgumentParser("ecnu_auth")
@@ -37,7 +39,7 @@ class Auth:
         self.args = args
         self.logger = logging.getLogger("ecnu_auth")
         logging.basicConfig(
-            format="%(asctime)s [%(levelname)s|%(name)s|%(filename)s:%(lineno)s] >> %(message)s",
+            format="%(asctime)s [%(levelname)s|%(filename)s:%(lineno)s] >> %(message)s",
             handlers=[logging.StreamHandler(sys.stdout)],
             level="INFO",
         )
@@ -73,7 +75,9 @@ class Auth:
             with open(self.cfg_path, "r") as f:
                 self.cfg = json.loads(f.read())
                 assert isinstance(self.cfg, dict)
-                assert USER_K in self.cfg and PASS_K in self.cfg
+                if USER_K not in self.cfg or PASS_K not in self.cfg:
+                    self.logger.error("Config file is invalid, please update it and try again.")
+                    exit()
         else:
             self.cfg[USER_K] = input("Student ID: ")
             self.cfg[PASS_K] = getpass("Password: ")
@@ -96,6 +100,8 @@ class Auth:
 
     def login(self):
         rst = getoutput(f"auth_client -u {self.safe_get_cfg(USER_K)} -p {self.safe_get_cfg(PASS_K)} -c {SETTING_PATH}")
+        if MSG_TIMEOUT in rst:
+            rst = "login timeout"  # replace timeout message in daemon mode
         self.logger.info(rst)
         if rst != "Login success":
             self.need_write = False
@@ -116,6 +122,9 @@ class Auth:
         if "is online" in rst:
             # somebody is indeed online
             return True
+        if MSG_TIMEOUT in rst:
+            self.logger.info("check timeout")
+            return False
         # something wrong happened
         if quiet:  # still log error if quiet
             self.logger.info(rst)
