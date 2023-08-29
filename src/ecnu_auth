@@ -10,36 +10,36 @@ from argparse import ArgumentParser
 from getpass import getpass
 from typing import Dict
 
-USERNAME_K = "username"
-PASSWORD_K = "password"
+USER_K = "username"
+PASS_K = "password"
 
 SETTING_PATH = "/usr/local/bin/auth_setting"
 
+
 def parse_args():
     parser = ArgumentParser("ecnu_auth")
-    parser.add_argument('--admin', type=str, default='')
-    parser.add_argument('--update', action='store_true')
+    parser.add_argument("--admin", type=str, default="")
+    parser.add_argument("--update", action="store_true")
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--login', action='store_true')
-    mode.add_argument('--logout', action='store_true')
-    mode.add_argument('--daemon', action='store_true', help='login in a infinite loop')
-    mode.add_argument('--check', action='store_true')
+    mode.add_argument("--login", action="store_true")
+    mode.add_argument("--logout", action="store_true")
+    mode.add_argument("--daemon", action="store_true", help="login in a infinite loop")
+    mode.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    
+
     if args.update and args.daemon:
-        parser.error('Cannot update in daemon mode')
+        parser.error("Cannot update in daemon mode")
     return args
 
 
 class Auth:
-
     def __init__(self, args):
         self.args = args
-        self.logger = logging.getLogger('ecnu_auth')
+        self.logger = logging.getLogger("ecnu_auth")
         logging.basicConfig(
             format="%(asctime)s [%(levelname)s|%(name)s|%(filename)s:%(lineno)s] >> %(message)s",
             handlers=[logging.StreamHandler(sys.stdout)],
-            level='INFO',
+            level="INFO",
         )
         # cfg is in home of admin, ie. ~$admin, see https://stackoverflow.com/a/20506895
         self.cfg_path = os.path.expanduser(f"~{args.admin}/.config/ecnu_auth/config.json")
@@ -47,15 +47,14 @@ class Auth:
         self.cfg: Dict[str, str] = {}
 
     def run(self):
-
         if self.args.check:
             online = self.check()
-            self.logger.info(f'Online: {online}')
+            self.logger.info(f"Online: {online}")
         else:
             self.load_cfg()
 
             if self.args.daemon:
-                self.logger.info('ecnu_auth daemon mode started.')
+                self.logger.info("ecnu_auth daemon mode started.")
                 while True:
                     if not self.check(quiet=True):
                         self.login()
@@ -71,46 +70,50 @@ class Auth:
 
     def load_cfg(self):
         if not self.args.update and os.path.isfile(self.cfg_path):
-            with open(self.cfg_path, 'r') as f:
+            with open(self.cfg_path, "r") as f:
                 self.cfg = json.loads(f.read())
                 assert isinstance(self.cfg, dict)
-                assert USERNAME_K in self.cfg and PASSWORD_K in self.cfg
+                assert USER_K in self.cfg and PASS_K in self.cfg
         else:
-            self.cfg[USERNAME_K] = input("Student ID: ")
-            self.cfg[PASSWORD_K] = getpass("Password: ")
+            self.cfg[USER_K] = input("Student ID: ")
+            self.cfg[PASS_K] = getpass("Password: ")
             self.need_write = True
 
     def save_cfg(self):
         os.makedirs(os.path.dirname(self.cfg_path), exist_ok=True)
-        with open(self.cfg_path, 'w') as f:
+        with open(self.cfg_path, "w") as f:
             f.write(json.dumps(self.cfg))
         os.chmod(self.cfg_path, stat.S_IRUSR | stat.S_IWUSR)
-    
-    def login(self):
+
+    def safe_get_cfg(self, key: str):
         # wrap password with single quote to allow special chars (except for single quotes) in password (also prevents shell injection)
         # https://unix.stackexchange.com/a/296147
         # and then replace ' with '"'"' to further allow single quotes in password
         # https://stackoverflow.com/a/1250279/17347885
-        safe_password = self.cfg[PASSWORD_K].replace("'", "'\"'\"'")
-        rst = getoutput(f"auth_client -u {self.cfg[USERNAME_K]} -p '{safe_password}' -c {SETTING_PATH}")
+        properly_quoted = self.cfg[key].replace("'", "'\"'\"'")
+        safe_str = f"'{properly_quoted}'"
+        return safe_str
+
+    def login(self):
+        rst = getoutput(f"auth_client -u {self.safe_get_cfg(USER_K)} -p {self.safe_get_cfg(PASS_K)} -c {SETTING_PATH}")
         self.logger.info(rst)
-        if rst != 'Login success':
+        if rst != "Login success":
             self.need_write = False
 
     def logout(self):
-        rst = getoutput(f"auth_client -u {self.cfg[USERNAME_K]} -c {SETTING_PATH} auth --logout")
+        rst = getoutput(f"auth_client -u {self.safe_get_cfg(USER_K)} -c {SETTING_PATH} auth --logout")
         self.logger.info(rst)
-        if rst != 'Logout success':
+        if rst != "Logout success":
             self.need_write = False
 
     def check(self, quiet=False):
         rst = getoutput(f"auth_client -c {SETTING_PATH} check")
         if not quiet:
             self.logger.info(rst)
-        if 'Account not_online_error is online.' in rst:
+        if "Account not_online_error is online." in rst:
             # A CLI bug of auth_client, it always output 'is online'
             return False
-        if 'is online' in rst:
+        if "is online" in rst:
             # somebody is indeed online
             return True
         # something wrong happened
@@ -119,6 +122,5 @@ class Auth:
         return False
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     Auth(parse_args()).run()
