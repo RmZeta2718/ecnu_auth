@@ -20,8 +20,8 @@ MSG_TIMEOUT = "context deadline exceeded (Client.Timeout exceeded while awaiting
 
 def parse_args():
     parser = ArgumentParser("ecnu_auth")
-    parser.add_argument("--admin", type=str, default="")
-    parser.add_argument("--update", action="store_true")
+    parser.add_argument("--admin", type=str, default="", help="admin username, default to current user")
+    parser.add_argument("--update", action="store_true", help="force update config file")
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--login", action="store_true")
     mode.add_argument("--logout", action="store_true")
