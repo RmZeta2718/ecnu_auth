@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-import os
-import sys
-import time
-import stat
 import json
 import logging
-from subprocess import getoutput
+import os
+import stat
+import sys
+import time
 from argparse import ArgumentParser
 from getpass import getpass
+from subprocess import getoutput
 from typing import Dict
 
 USER_K = "username"
 PASS_K = "password"
 
-SETTING_PATH = "/usr/local/bin/auth_setting"
+SETTING_FILE = "auth_setting"
 
 MSG_TIMEOUT = "context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
 
@@ -48,6 +48,7 @@ class Auth:
         self.cfg_path = os.path.expanduser(f"~{args.admin}/.config/ecnu_auth/config.json")
         self.need_write = False
         self.cfg: Dict[str, str] = {}
+        self.chdir()
 
     def run(self):
         if self.args.check:
@@ -100,7 +101,7 @@ class Auth:
         return safe_str
 
     def login(self):
-        cmd = f"auth_client -u {self.safe_get_cfg(USER_K)} -p {self.safe_get_cfg(PASS_K)} -c {SETTING_PATH}"
+        cmd = f"auth_client -u {self.safe_get_cfg(USER_K)} -p {self.safe_get_cfg(PASS_K)} -c {SETTING_FILE}"
         if self.args.verbose:
             self.logger.info(cmd)
         rst = getoutput(cmd)
@@ -111,7 +112,7 @@ class Auth:
             self.need_write = False
 
     def logout(self):
-        cmd = f"auth_client -u {self.safe_get_cfg(USER_K)} -c {SETTING_PATH} auth --logout"
+        cmd = f"auth_client -u {self.safe_get_cfg(USER_K)} -c {SETTING_FILE} auth --logout"
         if self.args.verbose:
             self.logger.info(cmd)
         rst = getoutput(cmd)
@@ -120,7 +121,7 @@ class Auth:
             self.need_write = False
 
     def check(self, quiet=False):
-        cmd = f"auth_client -c {SETTING_PATH} check"
+        cmd = f"auth_client -c {SETTING_FILE} check"
         if self.args.verbose:
             self.logger.info(cmd)
         rst = getoutput(cmd)
@@ -139,6 +140,12 @@ class Auth:
         if quiet:  # still log error if quiet
             self.logger.info(rst)
         return False
+
+    def chdir(self):
+        # change working directory to script's directory, so that we can find config file
+        # https://stackoverflow.com/a/9130405/17347885
+        os.chdir(sys.path[0])
+        assert os.path.isfile(SETTING_FILE), f"Cannot find {SETTING_FILE} in {os.getcwd()}"
 
 
 if __name__ == "__main__":
