@@ -106,7 +106,7 @@ class Auth:
             self.logger.info(cmd)
         rst = getoutput(cmd)
         if MSG_TIMEOUT in rst:
-            rst = "login timeout"  # replace timeout message in daemon mode
+            rst = "<== login timeout ==>"  # replace timeout message in daemon mode
         self.logger.info(rst)
         if rst != "Login success":
             self.need_write = False
@@ -134,7 +134,7 @@ class Auth:
             # somebody is indeed online
             return True
         if MSG_TIMEOUT in rst:
-            self.logger.info("check timeout")
+            self.logger.info("<== check timeout ==>")
             return False
         # something wrong happened
         if quiet:  # still log error if quiet
