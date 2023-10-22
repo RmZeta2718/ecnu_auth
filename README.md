@@ -1,5 +1,16 @@
 # ecnu\_auth
+
 A simple wrapper for ECNU net client on Linux
+
+## 配置
+
+执行安装脚本，相关文件会被复制到 `/usr/local/bin` 下
+
+```bash
+sudo ./install.sh
+```
+
+或者直接运行 `./src/ecnu_auth`
 
 ## 登录
 
@@ -27,7 +38,7 @@ sudo crontab -e
 
 crontab 中输入下面的内容
 
-```
+```bash
 admin=your_user_name
 @reboot sleep 30; /usr/local/anaconda3/bin/python /usr/local/bin/ecnu_auth --admin $admin --daemon > /usr/local/bin/ecnu_auth.log 2>&1
 ```
