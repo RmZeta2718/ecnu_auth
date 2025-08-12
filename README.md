@@ -40,20 +40,10 @@ crontab 中输入下面的内容
 
 ```bash
 admin=your_user_name
-@reboot sleep 30; /usr/local/anaconda3/bin/python /usr/local/bin/ecnu_auth --admin $admin --daemon > /usr/local/bin/ecnu_auth.log 2>&1
+* * * * * /usr/local/anaconda3/bin/python /usr/local/bin/ecnu_auth --admin $admin --check_login >> /var/log/ecnu_auth.log 2>&1
 ```
 
 `your_user_name` 替换为执行 `ecnu_auth --login` 的用户名（用于指定config路径）
-
-> `sleep 30` 保证相关依赖项已经启动完毕
-
-如果不能重启服务器，需要临时设置自动登录（重启后失效）:
-
-```bash
-sudo su  # switch to root
-admin=your_user_name
-nohup /usr/local/anaconda3/bin/python /usr/local/bin/ecnu_auth --admin $admin --daemon > /usr/local/bin/ecnu_auth.log 2>&1 &
-```
 
 ## 备注
 

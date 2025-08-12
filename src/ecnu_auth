@@ -28,6 +28,7 @@ def parse_args():
     mode.add_argument("--logout", action="store_true")
     mode.add_argument("--daemon", action="store_true", help="login in a infinite loop")
     mode.add_argument("--check", action="store_true")
+    mode.add_argument("--check_login", action="store_true")
     args = parser.parse_args()
 
     if args.update and args.daemon:
@@ -65,6 +66,9 @@ class Auth:
                     time.sleep(120)
             elif self.args.login:
                 self.login()
+            elif self.args.check_login:
+                if not self.check(quiet=True):
+                    self.login()
             else:
                 assert self.args.logout
                 self.logout()
